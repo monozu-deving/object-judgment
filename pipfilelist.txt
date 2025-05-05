@@ -6,3 +6,6 @@ python -m venv venv
 
 # 가상환경 활성화
 .\venv\Scripts\activate
+
+# pip 하기
+pip install ultralytics opencv-python
