@@ -1,44 +1,61 @@
 import cv2
 import time
+import csv
+import os
 from ultralytics import YOLO
 
-# 사전학습된 YOLOv8 모델 로드 (기둥 탐지가 아니라 일반 객체용)
+# 모델 불러오기
 model = YOLO("yolov8n.pt")
 
-cap = cv2.VideoCapture(0)
+# 저장 폴더 생성
+os.makedirs("captures", exist_ok=True)
 
-last_time = 0
-interval_sec = 2  # 2초마다 한 번 탐지
+# CSV 파일 준비
+csv_file = open("captures/detection_log.csv", mode="w", newline="", encoding="utf-8")
+csv_writer = csv.writer(csv_file)
+csv_writer.writerow(["filename", "x1", "y1", "x2", "y2", "width", "height"])
+
+cap = cv2.VideoCapture(0)
+saved_count = 0
 
 while True:
     ret, frame = cap.read()
     if not ret:
         break
 
-    now = time.time()
-    if now - last_time >= interval_sec:
-        last_time = now
+    results = model.predict(frame, imgsz=640, conf=0.5)
+    boxes = results[0].boxes
 
-        results = model.predict(frame, imgsz=640, conf=0.5)
-        boxes = results[0].boxes
+    for box in boxes:
+        x1, y1, x2, y2 = map(int, box.xyxy[0])
+        w = x2 - x1
+        h = y2 - y1
+        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        cv2.putText(frame, f"{w}x{h}", (x1, y1 - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
-        for box in boxes:
-            x1, y1, x2, y2 = map(int, box.xyxy[0])
-            w = x2 - x1
-            h = y2 - y1
-            print(f"Detected object size: {w}px x {h}px")
+    cv2.imshow("Press 's' to save", frame)
 
-            # 바운딩 박스 그리기
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(frame, f"{w}x{h}", (x1, y1 - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+    key = cv2.waitKey(1) & 0xFF
+    if key == ord('s'):  # 저장 키
+        if boxes:
+            filename = f"captures/capture_{saved_count}.jpg"
+            cv2.imwrite(filename, frame)
+            print(f"[✓] 저장됨: {filename}")
 
-    # 프레임 표시
-    cv2.imshow("Object Detection (Every 2s)", frame)
+            # 여러 객체가 있을 수 있으니 반복
+            for box in boxes:
+                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                w = x2 - x1
+                h = y2 - y1
+                csv_writer.writerow([os.path.basename(filename), x1, y1, x2, y2, w, h])
 
-    # q 누르면 종료
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+            saved_count += 1
+        else:
+            print("[!] 객체가 감지되지 않았습니다. 저장 안 됨.")
+    elif key == ord('q'):  # 종료 키
         break
 
 cap.release()
 cv2.destroyAllWindows()
+csv_file.close()
