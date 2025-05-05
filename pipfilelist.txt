@@ -1,0 +1,8 @@
+mkdir column_detector
+cd column_detector
+
+# 가상환경 생성
+python -m venv venv
+
+# 가상환경 활성화
+.\venv\Scripts\activate
