@@ -41,8 +41,9 @@ column_detector/
 ## ⚙️ 설치 및 실행 방법
 
 ### 1. 환경 설정 (Python 3.8+)
-```python -m venv venv  
-.\venv\Scripts\activate  
+```python -m venv venv```  
+```
+.\venv\Scripts\activate    
 pip install ultralytics opencv-python  
 ```
   
