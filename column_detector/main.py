@@ -1,7 +1,8 @@
 import cv2
 from detection.detector import detect_objects
-from detection.utils import assign_color
+from detection.utils import assign_color, draw_angle_line
 from capture.saver import init_capture_dir, open_csv, save_frame_and_log
+
 
 def main():
     init_capture_dir()
@@ -21,8 +22,10 @@ def main():
             color = assign_color(obj, ref_obj)
             cv2.drawContours(frame, [obj['box']], 0, color, 2)
             cx, cy, dx, dy, angle = obj['cx'], obj['cy'], obj['dx'], obj['dy'], obj['angle']
+
             cv2.putText(frame, f"Angle:{angle:.1f}", (int(cx), int(cy)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
             cv2.putText(frame, f"dx:{dx} dy:{dy}", (int(cx), int(cy)+20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+            draw_angle_line(frame, cx, cy, angle, color)
 
         cv2.line(frame, (cx_frame, 0), (cx_frame, frame.shape[0]), (120, 120, 120), 1)
         cv2.line(frame, (0, cy_frame), (frame.shape[1], cy_frame), (120, 120, 120), 1)
