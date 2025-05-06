@@ -20,7 +20,7 @@
 ---
 
 ## 📂 폴더 구조  ##
-
+```
 column_detector/  
 ├── main.py  
 ├── configs/  
@@ -35,17 +35,15 @@ column_detector/
 ├── captures/  
 │ ├── (저장된 이미지들)  
 │ └── detection_log.csv  
-───  
+```  
 ---
 
 ## ⚙️ 설치 및 실행 방법
 
 ### 1. 환경 설정 (Python 3.8+)
 ```python -m venv venv```  
-```
-.\venv\Scripts\activate    
-pip install ultralytics opencv-python  
-```
+```.\venv\Scripts\activate```      
+```pip install ultralytics opencv-python```  
   
 ### 2. 실행
 ```python main.py```
