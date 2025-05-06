@@ -1,91 +1,44 @@
 import cv2
-import time
-import csv
-import os
-import shutil
-from ultralytics import YOLO
+from detection.detector import detect_objects
+from detection.utils import assign_color
+from capture.saver import init_capture_dir, open_csv, save_frame_and_log
 
-# ▶ 모델 로드
-model = YOLO("yolov8n.pt")
+def main():
+    init_capture_dir()
+    csv_file, csv_writer = open_csv()
+    cap = cv2.VideoCapture(0)
+    saved_count = 0
 
-# ▶ 캡처 폴더 초기화
-if os.path.exists("captures"):
-    shutil.rmtree("captures")
-os.makedirs("captures", exist_ok=True)
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
 
-# ▶ CSV 로그 파일 생성
-csv_file = open("captures/detection_log.csv", mode="w", newline="", encoding="utf-8")
-csv_writer = csv.writer(csv_file)
-csv_writer.writerow(["filename", "x1", "y1", "x2", "y2", "width", "height", "dx", "dy"])
+        objects, (cx_frame, cy_frame) = detect_objects(frame)
+        ref_obj = min(objects, key=lambda o: o['dist']) if objects else None
 
-# ▶ 웹캠 실행
-cap = cv2.VideoCapture(0)
-saved_count = 0
+        for obj in objects:
+            color = assign_color(obj, ref_obj)
+            cv2.drawContours(frame, [obj['box']], 0, color, 2)
+            cx, cy, dx, dy, angle = obj['cx'], obj['cy'], obj['dx'], obj['dy'], obj['angle']
+            cv2.putText(frame, f"Angle:{angle:.1f}", (int(cx), int(cy)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+            cv2.putText(frame, f"dx:{dx} dy:{dy}", (int(cx), int(cy)+20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
 
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        break
+        cv2.line(frame, (cx_frame, 0), (cx_frame, frame.shape[0]), (120, 120, 120), 1)
+        cv2.line(frame, (0, cy_frame), (frame.shape[1], cy_frame), (120, 120, 120), 1)
 
-    h_frame, w_frame = frame.shape[:2]
-    cx_frame, cy_frame = w_frame // 2, h_frame // 2  # 중심 좌표 (0,0 기준)
+        cv2.imshow("YOLOv8 Seg Modular", frame)
+        key = cv2.waitKey(1) & 0xFF
 
-    # 예측 수행
-    results = model.predict(frame, imgsz=640, conf=0.5)
-    boxes = results[0].boxes
-
-    for box in boxes:
-        x1, y1, x2, y2 = map(int, box.xyxy[0])
-        w = x2 - x1
-        h = y2 - y1
-
-        # 객체 중심 좌표
-        cx_obj = (x1 + x2) // 2
-        cy_obj = (y1 + y2) // 2
-
-        # 중심 기준 상대 좌표 (dx, dy)
-        dx = cx_obj - cx_frame
-        dy = cy_obj - cy_frame
-
-        # 시각화
-        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        cv2.putText(frame, f"{w}x{h}", (x1, y1 - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-        cv2.putText(frame, f"dx={dx}, dy={dy}", (x1, y2 + 20),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
-
-    # 중심선 표시
-    cv2.line(frame, (cx_frame, 0), (cx_frame, h_frame), (100, 100, 100), 1)
-    cv2.line(frame, (0, cy_frame), (w_frame, cy_frame), (100, 100, 100), 1)
-
-    # 화면 출력
-    cv2.imshow("Object Detection with Relative Coordinates", frame)
-
-    key = cv2.waitKey(1) & 0xFF
-    if key == ord('s'):
-        if boxes:
-            filename = f"captures/capture_{saved_count}.jpg"
-            cv2.imwrite(filename, frame)
-            print(f"[✓] 저장됨: {filename}")
-
-            for box in boxes:
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
-                w = x2 - x1
-                h = y2 - y1
-                cx_obj = (x1 + x2) // 2
-                cy_obj = (y1 + y2) // 2
-                dx = cx_obj - cx_frame
-                dy = cy_obj - cy_frame
-                csv_writer.writerow([
-                    os.path.basename(filename), x1, y1, x2, y2, w, h, dx, dy
-                ])
-
+        if key == ord('s') and objects:
+            save_frame_and_log(frame, objects, csv_writer, saved_count)
             saved_count += 1
-        else:
-            print("[!] 객체가 감지되지 않았습니다. 저장 안 됨.")
-    elif key == ord('q'):
-        break
+        elif key == ord('q'):
+            break
 
-cap.release()
-cv2.destroyAllWindows()
-csv_file.close()
+    cap.release()
+    cv2.destroyAllWindows()
+    csv_file.close()
+
+if __name__ == "__main__":
+    main()
