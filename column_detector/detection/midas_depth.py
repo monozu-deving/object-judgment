@@ -9,7 +9,7 @@ midas.to("cuda" if torch.cuda.is_available() else "cpu").eval()
 
 midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms").small_transform
 
-def estimate_depth(frame):
+def estimate_depth_map(frame):
     img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     input_tensor = midas_transforms(img).to("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -22,9 +22,13 @@ def estimate_depth(frame):
             align_corners=False
         ).squeeze()
 
-    depth_map = prediction.cpu().numpy()
-    depth_map = (depth_map - depth_map.min()) / (depth_map.max() - depth_map.min() + 1e-6)
-    depth_visual = (depth_map * 255).astype(np.uint8)
-    depth_colored = cv2.applyColorMap(depth_visual, cv2.COLORMAP_MAGMA)
+    return prediction.cpu().numpy()
 
-    return depth_colored
+def normalize_depth_map(depth_map):
+    """
+    0 ~ 1 사이로 정규화된 depth map 반환
+    """
+    d_min = np.min(depth_map)
+    d_max = np.max(depth_map)
+    norm = (depth_map - d_min) / (d_max - d_min + 1e-6)
+    return norm
