@@ -1,6 +1,7 @@
 import cv2
-from detection.detector import detect_objects
+from detection.cvdetector import detect_objects
 from detection.utils import assign_color, draw_angle_line
+from detection.midas_depth import estimate_depth
 from capture.saver import init_capture_dir, open_csv, save_frame_and_log
 
 def main():
@@ -18,6 +19,9 @@ def main():
 
         # 객체 감지 + 프레임 중심 좌표
         objects_info, (cx_frame, cy_frame) = detect_objects(frame)
+
+        # MiDaS depth 예측
+        depth_image = estimate_depth(frame)
 
         # 중심 기준 객체 선택
         ref_obj = min(objects_info, key=lambda o: o['dist']) if objects_info else None
@@ -47,9 +51,12 @@ def main():
         cv2.line(frame, (cx_frame, 0), (cx_frame, frame.shape[0]), (120, 120, 120), 1)
         cv2.line(frame, (0, cy_frame), (frame.shape[1], cy_frame), (120, 120, 120), 1)
 
-        # 프레임 표시
-        cv2.imshow("YOLOv8 Seg + Angle View", frame)
+        # 두 영상 나란히 보여주기
+        frame_resized = cv2.resize(frame, (640, 480))
+        depth_resized = cv2.resize(depth_image, (640, 480))
+        combined = cv2.hconcat([frame_resized, depth_resized])
 
+        cv2.imshow("YOLO + MiDaS", combined)
         key = cv2.waitKey(1) & 0xFF
         if key == ord('s') and objects_info:
             save_frame_and_log(frame, objects_info, csv_writer, saved_count)
