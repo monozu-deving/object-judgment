@@ -1,5 +1,7 @@
 # 🧱 Column Detector – YOLOv8 기반 기둥 객체 인식 시스템
 
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
+
 **Column Detector**는 YOLOv8 세그멘테이션 모델을 기반으로 웹캠 영상에서 기둥 또는 물체를 탐지하고,  
 각 객체의 회전각(angle), 상대 좌표(dx, dy), 중심 기준 위치(왼쪽/오른쪽)를 실시간 분석하여 시각화합니다.  
 또한 `s` 키를 누를 경우, 해당 프레임과 객체 정보를 이미지 및 CSV로 저장할 수 있습니다.
