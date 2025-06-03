@@ -65,3 +65,9 @@ capture_0.jpg,312,260,52,170,-24.5,5,10
 yolov8n-seg.pt (Ultralytics YOLOv8 Segmentation model)
 
 보다 정확한 탐지를 원할 경우 yolov8s-seg.pt, yolov8m-seg.pt 등으로 교체하세요.
+
+---
+
+## 🖼️ Photo
+
+![Image](https://github.com/user-attachments/assets/6b6b2716-e9c1-4e58-af0e-0531481ccfd4)
